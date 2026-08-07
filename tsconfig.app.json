@@ -8,6 +8,7 @@
     ],
     "module": "esnext",
     "types": [
+      "chrome",
       "vite/client"
     ],
     "allowArbitraryExtensions": true,

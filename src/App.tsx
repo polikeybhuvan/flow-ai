@@ -1,32 +1,172 @@
-function App() {
+import { useState } from "react";
+import { downloadConversation } from "./services/exportService";
+import { saveConversation } from "./services/storage";
+import { openClaude, openGemini } from "./services/navigation";
+import type { ConversationExport } from "./types/conversation";
+
+export default function App() {
+  const [conversation, setConversation] =
+    useState<ConversationExport | null>(null);
+
+  const [status, setStatus] = useState("Ready");
+
+  async function exportConversation() {
+    try {
+      setStatus("Exporting...");
+
+      const [tab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
+
+      if (!tab?.id) {
+        setStatus("No active tab");
+        return;
+      }
+
+      const response = await chrome.tabs.sendMessage(tab.id, {
+        type: "EXPORT_CHAT",
+      });
+
+      if (!response?.success) {
+        setStatus("Export failed");
+        return;
+      }
+
+      const data: ConversationExport = {
+        platform: response.conversation.platform,
+        title: response.conversation.title,
+        url: response.conversation.url,
+        exportedAt: new Date().toISOString(),
+        messages: response.conversation.messages,
+      };
+
+      await saveConversation(data);
+
+      setConversation(data);
+
+      setStatus(
+        `Exported ${data.messages.length} messages from ${data.platform}`
+      );
+    } catch (err) {
+      console.error(err);
+
+      if (err instanceof Error) {
+        setStatus(err.message);
+      } else {
+        setStatus(String(err));
+      }
+    }
+  }
+
+  function handleDownload() {
+    if (!conversation) return;
+
+    downloadConversation(conversation);
+
+    setStatus("Conversation downloaded");
+  }
+
+  async function handleOpenClaude() {
+    await openClaude();
+  }
+
+  async function handleOpenGemini() {
+    await openGemini();
+  }
+
   return (
     <div
       style={{
-        width: "350px",
-        minHeight: "500px",
-        padding: "20px",
-        fontFamily: "Arial"
+        width: 380,
+        padding: 20,
+        fontFamily: "Arial, sans-serif",
       }}
     >
-      <h1>🚀 FlowAI</h1>
+      <h2>🚀 FlowAI</h2>
 
-      <p>Developer Productivity Assistant</p>
+      <p>
+        <strong>Status:</strong> {status}
+      </p>
 
-      <hr />
+      <button
+        style={{
+          width: "100%",
+          padding: 12,
+          marginBottom: 10,
+        }}
+        onClick={exportConversation}
+      >
+        📤 Export Conversation
+      </button>
 
-      <button>Export Chat</button>
+      <button
+        style={{
+          width: "100%",
+          padding: 12,
+          marginBottom: 10,
+        }}
+        disabled={!conversation}
+        onClick={handleDownload}
+      >
+        💾 Download JSON
+      </button>
 
-      <br />
-      <br />
+      <button
+        style={{
+          width: "100%",
+          padding: 12,
+          marginBottom: 10,
+        }}
+        disabled={!conversation}
+        onClick={handleOpenClaude}
+      >
+        🤖 Continue in Claude
+      </button>
 
-      <button>Import Context</button>
+      <button
+        style={{
+          width: "100%",
+          padding: 12,
+        }}
+        disabled={!conversation}
+        onClick={handleOpenGemini}
+      >
+        ✨ Continue in Gemini
+      </button>
 
-      <br />
-      <br />
+      {conversation && (
+        <div
+          style={{
+            marginTop: 20,
+            maxHeight: 220,
+            overflow: "auto",
+            border: "1px solid #ddd",
+            borderRadius: 8,
+            padding: 10,
+            fontSize: 12,
+          }}
+        >
+          <strong>{conversation.title}</strong>
 
-      <button>Compress Conversation</button>
+          <br />
+          <br />
+
+          Platform: {conversation.platform}
+
+          <br />
+
+          Messages: {conversation.messages.length}
+
+          <br />
+
+          Exported:
+
+          <br />
+
+          {conversation.exportedAt}
+        </div>
+      )}
     </div>
   );
 }
-
-export default App;
