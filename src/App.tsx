@@ -2,9 +2,12 @@ import { useState } from "react";
 import { downloadConversation } from "./services/exportService";
 import { saveConversation } from "./services/storage";
 import { openClaude, openGemini } from "./services/navigation";
+import { getCurrentProvider } from "./services/providerService";
 import type { ConversationExport } from "./types/conversation";
 
 export default function App() {
+  const provider = getCurrentProvider();
+
   const [conversation, setConversation] =
     useState<ConversationExport | null>(null);
 
@@ -84,6 +87,10 @@ export default function App() {
       }}
     >
       <h2>🚀 FlowAI</h2>
+
+      <p>
+        <strong>Current AI:</strong> {provider.name}
+      </p>
 
       <p>
         <strong>Status:</strong> {status}
