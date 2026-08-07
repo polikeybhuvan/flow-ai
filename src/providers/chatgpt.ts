@@ -1,4 +1,4 @@
-import type { Provider } from "./types";
+import type { Provider, ConversationMessage } from "./types";
 
 export const ChatGPTProvider: Provider = {
     id: "chatgpt",
@@ -9,18 +9,20 @@ export const ChatGPTProvider: Provider = {
         return location.hostname.includes("chatgpt");
     },
 
-    async exportConversation() {
-        const messages = [
-            ...document.querySelectorAll("[data-message-author-role]"),
-        ].map((el) => ({
-            role: el.getAttribute("data-message-author-role"),
+    async exportConversation(): Promise<ConversationMessage[]> {
+        return Array.from(
+            document.querySelectorAll("[data-message-author-role]")
+        ).map((el) => ({
+            role:
+                (el.getAttribute("data-message-author-role") as
+                    | "user"
+                    | "assistant"
+                    | "system") ?? "user",
             text: el.textContent?.trim() ?? "",
         }));
-
-        return messages;
     },
 
-    async importConversation(data: string) {
+    async importConversation(data: string): Promise<boolean> {
         const editor = document.querySelector(
             "textarea, [contenteditable='true']"
         ) as HTMLTextAreaElement | HTMLElement | null;

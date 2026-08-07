@@ -1,5 +1,8 @@
 import type { Provider } from "./types";
-import { getTransferPrompt } from "../services/transferService";
+
+function sleep(ms: number) {
+    return new Promise<void>((resolve) => setTimeout(resolve, ms));
+}
 
 export const ClaudeProvider: Provider = {
     id: "claude",
@@ -7,32 +10,66 @@ export const ClaudeProvider: Provider = {
     name: "Claude",
 
     detect() {
-        return location.hostname.includes("claude");
+        return location.hostname.includes("claude.ai");
     },
 
     async exportConversation() {
-        return [];
+        return Array.from(
+            document.querySelectorAll(
+                '[data-testid="user-message"], [data-testid="assistant-message"]'
+            )
+        ).map((el) => ({
+            role: (
+                el.getAttribute("data-testid")?.includes("user")
+                    ? "user"
+                    : "assistant"
+            ) as "user" | "assistant" | "system",
+            text: el.textContent?.trim() ?? "",
+        }));
     },
 
-    async importConversation() {
-        const prompt = await getTransferPrompt();
+    async importConversation(data: string) {
+        for (let i = 0; i < 20; i++) {
+            const editor = document.querySelector(
+                'div[contenteditable="true"], textarea'
+            ) as HTMLElement | HTMLTextAreaElement | null;
 
-        if (!prompt) return false;
+            if (!editor) {
+                await sleep(500);
+                continue;
+            }
 
-        const editor = document.querySelector(
-            "textarea, [contenteditable='true']"
-        ) as HTMLTextAreaElement | HTMLElement | null;
+            editor.focus();
 
-        if (!editor) return false;
+            try {
+                await navigator.clipboard.writeText(data);
+            } catch (err) {
+                console.error("Clipboard write failed:", err);
+            }
 
-        if (editor instanceof HTMLTextAreaElement) {
-            editor.value = prompt;
-            editor.dispatchEvent(new Event("input", { bubbles: true }));
-        } else {
-            editor.textContent = prompt;
-            editor.dispatchEvent(new InputEvent("input", { bubbles: true }));
+            if (editor instanceof HTMLTextAreaElement) {
+                editor.value = data;
+                editor.dispatchEvent(
+                    new Event("input", {
+                        bubbles: true,
+                    })
+                );
+            } else {
+                editor.textContent = data;
+
+                editor.dispatchEvent(
+                    new InputEvent("input", {
+                        bubbles: true,
+                        cancelable: true,
+                        inputType: "insertText",
+                        data,
+                    })
+                );
+            }
+
+            return true;
         }
 
-        return true;
+        return false;
     },
 };
