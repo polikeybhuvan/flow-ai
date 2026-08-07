@@ -1,3 +1,5 @@
+import "../content/claude";
+
 console.log("🚀 FlowAI content script loaded!");
 
 function detectPlatform() {
@@ -16,7 +18,6 @@ function exportConversation() {
         text: string;
     }[] = [];
 
-    // ChatGPT
     if (detectPlatform() === "chatgpt") {
         document
             .querySelectorAll("[data-message-author-role]")
