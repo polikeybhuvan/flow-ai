@@ -1,78 +1,110 @@
-import "../content/claude";
+import { ChatGPTProvider } from "../providers/chatgpt";
+import { ClaudeProvider } from "../providers/claude";
+import { GeminiProvider } from "../providers/gemini";
 
 console.log("🚀 FlowAI content script loaded!");
 
-function detectPlatform() {
-    const host = location.hostname;
+function provider() {
+    if (ChatGPTProvider.detect()) return ChatGPTProvider;
+    if (ClaudeProvider.detect()) return ClaudeProvider;
+    if (GeminiProvider.detect()) return GeminiProvider;
 
-    if (host.includes("chatgpt")) return "chatgpt";
-    if (host.includes("claude")) return "claude";
-    if (host.includes("gemini")) return "gemini";
-
-    return "unknown";
+    return null;
 }
 
-function exportConversation() {
-    const messages: {
-        role: "user" | "assistant";
-        text: string;
-    }[] = [];
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    const current = provider();
 
-    if (detectPlatform() === "chatgpt") {
-        document
-            .querySelectorAll("[data-message-author-role]")
-            .forEach((el) => {
-                const role = el.getAttribute(
-                    "data-message-author-role"
-                ) as "user" | "assistant";
+    if (!current) {
+        sendResponse({
+            success: false,
+        });
 
-                const text = el.textContent?.trim();
-
-                if (text) {
-                    messages.push({
-                        role,
-                        text,
-                    });
-                }
-            });
+        return true;
     }
 
-    return {
-        success: true,
-        conversation: {
-            platform: detectPlatform(),
-            title: document.title,
-            url: location.href,
-            messages,
-        },
-    };
-}
-
-chrome.runtime.onMessage.addListener(async (message, _sender, sendResponse) => {
     if (message.type === "PING") {
         sendResponse({
             success: true,
+            platform: current.id,
             url: location.href,
             title: document.title,
         });
+
         return true;
     }
 
     if (message.type === "EXPORT_CHAT") {
-        sendResponse(exportConversation());
-        return true;
-    }
-
-    if (message.type === "AUTO_TRANSFER") {
-        const mod = await import("./claude");
-        await mod.default();
-
-        sendResponse({
-            success: true,
+        current.exportConversation().then((messages) => {
+            sendResponse({
+                success: true,
+                conversation: {
+                    platform: current.id,
+                    title: document.title,
+                    url: location.href,
+                    messages,
+                },
+            });
         });
 
         return true;
     }
 
-    return false;
+    if (message.type === "IMPORT_CHAT") {
+        chrome.storage.local
+            .get("flowai-conversation")
+            .then(async (stored) => {
+                const saved = stored[
+                    "flowai-conversation"
+                ] as
+                    | {
+                        version: number;
+                        data: {
+                            platform: string;
+                            title: string;
+                            url: string;
+                            exportedAt: string;
+                            messages: {
+                                role: string;
+                                text: string;
+                            }[];
+                        };
+                    }
+                    | undefined;
+
+                if (!saved) {
+                    sendResponse({
+                        success: false,
+                        error: "No saved conversation",
+                    });
+
+                    return;
+                }
+
+                const prompt = saved.data.messages
+                    .map(
+                        (m) =>
+                            `${m.role.toUpperCase()}:\n${m.text}`
+                    )
+                    .join("\n\n");
+
+                const imported = await current.importConversation(prompt);
+
+                sendResponse({
+                    success: imported,
+                });
+            })
+            .catch((err) => {
+                console.error(err);
+
+                sendResponse({
+                    success: false,
+                    error: String(err),
+                });
+            });
+
+        return true;
+    }
+
+    return true;
 });
