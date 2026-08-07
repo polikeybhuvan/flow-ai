@@ -13,6 +13,10 @@
         "default_popup": "index.html",
         "default_title": "FlowAI"
     },
+    "background": {
+        "service_worker": "src/background/index.ts",
+        "type": "module"
+    },
     "permissions": [
         "storage",
         "tabs",
@@ -33,7 +37,8 @@
             ],
             "js": [
                 "src/content/index.ts"
-            ]
+            ],
+            "run_at": "document_idle"
         }
     ]
 }

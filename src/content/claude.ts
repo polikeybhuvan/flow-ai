@@ -6,17 +6,13 @@ async function waitForEditor() {
             "textarea, [contenteditable='true']"
         );
 
-        if (editor) {
-            return editor;
-        }
+        if (editor) return;
 
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await new Promise((r) => setTimeout(r, 500));
     }
-
-    return null;
 }
 
-async function autoTransfer() {
+export default async function () {
     const provider = detectProvider();
 
     if (!provider) return;
@@ -27,7 +23,3 @@ async function autoTransfer() {
 
     await provider.importConversation("");
 }
-
-window.addEventListener("load", () => {
-    setTimeout(autoTransfer, 1500);
-});

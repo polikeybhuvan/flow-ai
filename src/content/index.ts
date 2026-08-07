@@ -3,7 +3,7 @@ import "../content/claude";
 console.log("🚀 FlowAI content script loaded!");
 
 function detectPlatform() {
-    const host = window.location.hostname;
+    const host = location.hostname;
 
     if (host.includes("chatgpt")) return "chatgpt";
     if (host.includes("claude")) return "claude";
@@ -48,22 +48,31 @@ function exportConversation() {
     };
 }
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener(async (message, _sender, sendResponse) => {
     if (message.type === "PING") {
         sendResponse({
             success: true,
             url: location.href,
             title: document.title,
         });
-
         return true;
     }
 
     if (message.type === "EXPORT_CHAT") {
         sendResponse(exportConversation());
+        return true;
+    }
+
+    if (message.type === "AUTO_TRANSFER") {
+        const mod = await import("./claude");
+        await mod.default();
+
+        sendResponse({
+            success: true,
+        });
 
         return true;
     }
 
-    return true;
+    return false;
 });
