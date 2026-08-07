@@ -15,3 +15,18 @@ export async function openChatGPT() {
         url: "https://chatgpt.com/",
     });
 }
+
+export async function openPlatform(
+    platform: "chatgpt" | "claude" | "gemini"
+) {
+    switch (platform) {
+        case "chatgpt":
+            return openChatGPT();
+
+        case "claude":
+            return openClaude();
+
+        case "gemini":
+            return openGemini();
+    }
+}
