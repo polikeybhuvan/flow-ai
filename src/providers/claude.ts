@@ -1,4 +1,5 @@
 import type { Provider } from "./types";
+import { getTransferPrompt } from "../services/transferService";
 
 export const ClaudeProvider: Provider = {
     id: "claude",
@@ -13,18 +14,22 @@ export const ClaudeProvider: Provider = {
         return [];
     },
 
-    async importConversation(data: string) {
-        const editor =
-            document.querySelector('[contenteditable="true"]') ||
-            document.querySelector("textarea");
+    async importConversation() {
+        const prompt = await getTransferPrompt();
+
+        if (!prompt) return false;
+
+        const editor = document.querySelector(
+            "textarea, [contenteditable='true']"
+        ) as HTMLTextAreaElement | HTMLElement | null;
 
         if (!editor) return false;
 
         if (editor instanceof HTMLTextAreaElement) {
-            editor.value = data;
+            editor.value = prompt;
             editor.dispatchEvent(new Event("input", { bubbles: true }));
         } else {
-            editor.textContent = data;
+            editor.textContent = prompt;
             editor.dispatchEvent(new InputEvent("input", { bubbles: true }));
         }
 
