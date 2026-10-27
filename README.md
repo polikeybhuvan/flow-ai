@@ -161,8 +161,9 @@ Requirements: Node.js 22.12 or newer and npm.
 ```bash
 git clone https://github.com/polikeybhuvan/flow-ai.git
 cd flow-ai/source
-npm install
+npm ci
 npm run lint
+npm test
 npm run build
 ```
 
@@ -303,6 +304,7 @@ If Playwright tests are configured, they should run in CI and their reports shou
 FlowAI is designed around browser-local context handoff.
 
 - No FlowAI backend is required for the core transfer workflow.
+- Extension permissions are limited to local storage and script execution on the supported AI sites; broad tab-metadata access is not requested.
 - Conversations are handled through the browser extension.
 - Users explicitly initiate transfers.
 - Provider-specific logic remains inside the extension.

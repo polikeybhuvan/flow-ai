@@ -11,7 +11,7 @@ The destination receives a role-labeled prompt. FlowAI does not recreate the des
 - Storage service: stores the latest export and a pending-transfer record in Chrome local storage.
 - Transfer service: formats the stored messages, creates a pending transfer record, and opens the chosen destination.
 - Content script: answers popup messages, exports the current conversation, imports the stored transcript, and handles pending transfers after a destination page loads.
-- Background service worker: registers extension lifecycle listeners and handles extension messaging.
+- Background service worker: registers extension lifecycle listeners. The current transfer path uses the popup, content scripts, and Chrome tabs API directly; no tab-navigation logging is required.
 
 ## Transfer lifecycle
 1. The user opens the extension on a supported conversation and selects Export Conversation.
@@ -27,6 +27,7 @@ A conversation export contains a platform identifier, title, source URL, exporte
 
 ## Privacy and security
 - The core transfer path does not require a FlowAI server.
+- Manifest permissions are limited to local storage and script execution, with host access restricted to the three supported AI websites.
 - Conversation content is stored in Chrome local storage on the user's browser. This is local storage, not an encrypted vault; other code running with the extension's privileges may be able to access it.
 - The popup provides a Clear Saved Data action that removes the saved conversation and pending-transfer record.
 - FlowAI must not automatically submit the inserted transcript or silently transmit it to a remote FlowAI service.
