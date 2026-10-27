@@ -5,6 +5,7 @@ import type {
 
 import { insertLargeText } from "./largeText";
 import { getNonOverlappingMessages } from "./messageMerge";
+import { roleFromContentSearchUnitKey, type ChatGPTSpeaker } from "./chatgptSelectors";
 
 function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => {
@@ -32,21 +33,6 @@ type ChatGPTCandidate = {
     role: ConversationMessage["role"];
     text: string;
 };
-
-type ChatGPTSpeaker = "user" | "assistant";
-
-/**
- * Current ChatGPT layouts may use search-unit keys such as
- * "...:0:user" / "...:0:assistant" instead of the older role markers.
- * Exported separately so this compatibility rule can be unit-tested.
- */
-export function roleFromContentSearchUnitKey(
-    key: string | null
-): ChatGPTSpeaker | null {
-    const match = key?.match(/(?:^|:)(user|assistant)$/i);
-    if (!match) return null;
-    return match[1].toLowerCase() as ChatGPTSpeaker;
-}
 
 function roleFromAttributes(element: HTMLElement): ChatGPTSpeaker | null {
     const candidates = [

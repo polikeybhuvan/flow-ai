@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { roleFromContentSearchUnitKey } from "./chatgpt.ts";
+import { roleFromContentSearchUnitKey } from "./chatgptSelectors.ts";
 
 test("recognizes user content units in the newer ChatGPT layout", () => {
     assert.equal(roleFromContentSearchUnitKey("thread:turn-12:user"), "user");
