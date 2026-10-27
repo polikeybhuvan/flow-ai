@@ -187,16 +187,87 @@ function collectFromTurnKeys(): ChatGPTCandidate[] {
     const candidates: ChatGPTCandidate[] = [];
 
     for (const turn of turns) {
-        // Newer ChatGPT layouts expose the role on the message content
-        // rather than on the turn wrapper. A single wrapper can contain
-        // both role-specific nodes, so inspect each role independently.
-        for (const role of ["user", "assistant"] as const) {
-            const text = preferredContentText(turn, role, false);
+        // Some ChatGPT layouts encode the speaker in the key itself. Parse it
+        // before relying on nested selectors; that is the path the previous
+        // implementation missed.
+        const role =
+            roleFromContentSearchUnitKey(turn.getAttribute("data-turn-key")) ||
+            roleFromAttributes(turn);
+
+        if (role) {
+            const text = preferredContentText(turn, role) || readElementText(turn);
             if (text) candidates.push({ element: turn, role, text });
+            continue;
+        }
+
+        // If the turn key is only a wrapper ID, inspect role-specific content
+        // nested inside it without assigning the whole wrapper to both roles.
+        for (const child of turn.querySelectorAll<HTMLElement>(
+            "[data-content-search-unit-key]"
+        )) {
+            const childRole = roleFromContentSearchUnitKey(
+                child.getAttribute("data-content-search-unit-key")
+            );
+            if (!childRole) continue;
+
+            const text = preferredContentText(child, childRole) || readElementText(child);
+            if (text) candidates.push({ element: child, role: childRole, text });
         }
     }
 
     return removeNestedDuplicateCandidates(candidates);
+}
+
+function roleFromScreenReaderLabel(element: HTMLElement): ChatGPTSpeaker | null {
+    const labels = Array.from(
+        element.querySelectorAll<HTMLElement>("h1, h2, h3, h4, h5, [class*='sr-only'], [aria-label]")
+    )
+        .map((node) => cleanText(node.getAttribute("aria-label") || node.textContent || ""))
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+    if (labels.includes("you said") || labels.includes("you wrote") || labels.includes("your message")) return "user";
+    if (labels.includes("chatgpt said") || labels.includes("assistant said") || labels.includes("chatgpt response")) return "assistant";
+    return null;
+}
+
+function collectFromConversationTurnShells(): ChatGPTCandidate[] {
+    const shells = Array.from(
+        document.querySelectorAll<HTMLElement>(
+            'article[data-testid^="conversation-turn-"], [data-testid^="conversation-turn-"]'
+        )
+    );
+    const candidates: ChatGPTCandidate[] = [];
+
+    for (const shell of shells) {
+        const keyRole = roleFromContentSearchUnitKey(
+            shell.getAttribute("data-turn-key")
+        );
+        const role = roleFromAttributes(shell) || keyRole || roleFromScreenReaderLabel(shell);
+        if (!role) continue;
+
+        const text = preferredContentText(shell, role) || readElementText(shell);
+        if (text) candidates.push({ element: shell, role, text });
+    }
+
+    return removeNestedDuplicateCandidates(candidates);
+}
+
+function chatGPTSelectorDiagnostics(): Record<string, number> {
+    const count = (selector: string) => document.querySelectorAll(selector).length;
+    return {
+        roleAttributeNodes: count("[data-message-author-role]"),
+        dataTurnNodes: count("[data-turn]"),
+        contentSearchUnits: count("[data-content-search-unit-key]"),
+        userContentSearchUnits: count('[data-content-search-unit-key$=":user"]'),
+        assistantContentSearchUnits: count('[data-content-search-unit-key$=":assistant"]'),
+        turnKeyNodes: count("[data-turn-key]"),
+        conversationTurnShells: count('[data-testid^="conversation-turn-"]'),
+        userRoleClasses: count(".user-turn"),
+        assistantRoleClasses: count(".agent-turn"),
+        mainTextLength: document.querySelector("main")?.textContent?.length ?? 0,
+    };
 }
 
 function collectFromRoleClasses(): ChatGPTCandidate[] {
@@ -227,6 +298,7 @@ function collectChatGPTMessages(): ConversationMessage[] {
         collectFromDataTurns,
         collectFromContentSearchUnits,
         collectFromTurnKeys,
+        collectFromConversationTurnShells,
         collectFromRoleClasses,
     ];
 
@@ -533,7 +605,9 @@ export const ChatGPTProvider: Provider = {
 
         if (messages.length === 0) {
             console.error(
-                "FlowAI: no ChatGPT messages found"
+                "FlowAI: no ChatGPT messages found",
+                "DOM selector counts (no conversation text collected):",
+                chatGPTSelectorDiagnostics()
             );
 
             /*
