@@ -20,3 +20,8 @@ test("does not infer a role from an unrelated content-unit key", () => {
     assert.equal(roleFromContentSearchUnitKey(null), null);
     assert.equal(roleFromContentSearchUnitKey("thread:user:message"), null);
 });
+
+test("parses roles from the newer turn-key shape", () => {
+    assert.equal(roleFromContentSearchUnitKey("conversation:abc:0:user"), "user");
+    assert.equal(roleFromContentSearchUnitKey("conversation:abc:0:assistant"), "assistant");
+});

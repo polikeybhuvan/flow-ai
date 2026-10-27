@@ -2,7 +2,8 @@ export type ChatGPTSpeaker = "user" | "assistant";
 
 /**
  * Current ChatGPT layouts may use search-unit keys such as
- * "...:0:user" / "...:0:assistant" instead of the older role markers.
+ * "...:0:user" / "...:0:assistant" on content-search units and turn keys
+ * instead of the older role markers.
  */
 export function roleFromContentSearchUnitKey(
     key: string | null
