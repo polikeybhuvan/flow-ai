@@ -63,9 +63,12 @@ async function pingActiveTab() {
             return response;
         }
     } catch (error) {
+        const detail =
+            error instanceof Error ? error.message : String(error);
         throw new Error(
             "FlowAI could not connect to this AI page. Refresh the page and try again. " +
-                (error instanceof Error ? error.message : String(error))
+                detail,
+            { cause: error }
         );
     }
 
