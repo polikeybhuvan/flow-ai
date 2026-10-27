@@ -227,8 +227,8 @@ function roleFromScreenReaderLabel(element: HTMLElement): ChatGPTSpeaker | null 
         .join(" ")
         .toLowerCase();
 
-    if (/\\b(you said|you wrote|your message)\\b/.test(labels)) return "user";
-    if (/\\b(chatgpt said|assistant said|chatgpt response)\\b/.test(labels)) return "assistant";
+    if (labels.includes("you said") || labels.includes("you wrote") || labels.includes("your message")) return "user";
+    if (labels.includes("chatgpt said") || labels.includes("assistant said") || labels.includes("chatgpt response")) return "assistant";
     return null;
 }
 
