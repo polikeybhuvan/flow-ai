@@ -21,7 +21,7 @@ on:
       - ".github/workflows/**"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   lint-test-build:
@@ -47,6 +47,18 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+      - name: Commit generated extension and lockfile
+        working-directory: ${{ github.workspace }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add source/package-lock.json dist/
+          if git diff --cached --quiet; then
+            echo "Generated artifacts are already up to date."
+          else
+            git commit -m "Sync lockfile and built extension"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
       - name: Upload bootstrap build and lockfile
         uses: actions/upload-artifact@v4
         with:
