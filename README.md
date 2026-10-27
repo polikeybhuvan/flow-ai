@@ -171,7 +171,7 @@ npm run build
 4. Select the repository-root `dist/` folder.
 5. Open ChatGPT, Claude, or Gemini and click the **FlowAI** extension icon.
 
-The source build writes the extension to the root `dist/` directory. Run the build again after source changes so the loaded extension matches the source.
+The source build writes the extension to the root `dist/` directory. The repository CI checks that this checked-in build matches the source. Run the build after source changes and commit the refreshed `dist/` output.
 
 ---
 
@@ -181,9 +181,10 @@ The source project is located in `source/`.
 
 ```bash
 cd source
-npm install
-npm run build
+npm ci
 npm run lint
+npm test
+npm run build
 ```
 
 The production extension is generated from the source build configuration.
@@ -289,7 +290,7 @@ Full documentation: [`docs/AGENTS_AND_SKILLS.md`](docs/AGENTS_AND_SKILLS.md)
 
 # 🧪 Testing & Verification
 
-The GitHub Actions workflow runs `npm run lint` and `npm run build` on pushes and pull requests. The project does not yet have an automated unit or end-to-end test suite, so provider behavior still needs manual verification.
+The GitHub Actions workflow runs linting, unit tests, a TypeScript check, a production build, and a check that the committed `dist/` output matches the source build. Provider behavior still needs manual verification because no live-site end-to-end tests are configured.
 
 Before a release, verify ChatGPT detection, Claude detection, Gemini detection, conversation export/import, large conversation transfer, extension reload/install, and provider failure handling.
 
@@ -366,11 +367,11 @@ FlowAI addresses a real developer workflow problem: moving working context betwe
 - [ ] `AGENTS.md` is present
 - [ ] `docs/AGENTS_AND_SKILLS.md` documents a custom agent and skill
 - [ ] Application builds successfully
-- [ ] `dist/` contains the working extension build
+- [ ] `dist/` matches the source build
 - [ ] GitHub Actions workflow exists
 - [ ] Latest CI run is green
-- [ ] Playwright/end-to-end tests pass if configured
-- [ ] Linting passes
+- [ ] Manual export/import checks pass on all three providers
+- [ ] Linting and unit tests pass
 - [ ] Secrets are not committed
 - [ ] Git history contains progressive commits
 - [ ] A semantic version tag/release exists
@@ -420,7 +421,7 @@ New AI providers should be addable without rewriting the core transfer system.
 
 # 📄 License
 
-A license file has not been selected or added yet. Choose and add a license before inviting others to reuse or redistribute the project; public repository visibility alone does not grant those permissions.
+This hackathon project intentionally does not include a `LICENSE` file.
 
 ---
 

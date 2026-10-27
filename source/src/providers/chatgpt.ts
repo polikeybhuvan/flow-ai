@@ -4,6 +4,7 @@ import type {
 } from "./types";
 
 import { insertLargeText } from "./largeText";
+import { getNonOverlappingMessages } from "./messageMerge";
 
 function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => {
@@ -141,37 +142,12 @@ async function collectChatGPTMessagesFully(): Promise<ConversationMessage[]> {
     const originalTop = container.scrollTop;
     const collected: ConversationMessage[] = [];
 
-    const sameMessage = (
-        left: ConversationMessage,
-        right: ConversationMessage
-    ) => left.role === right.role && left.text === right.text;
-
     const addCurrent = () => {
         const current = collectChatGPTMessages();
         if (!current.length) return;
 
-        // Adjacent scroll snapshots overlap. Merge only the longest suffix/prefix
-        // overlap, instead of globally deduplicating by text and dropping
-        // legitimate repeated turns.
-        let overlap = Math.min(collected.length, current.length);
-        while (overlap > 0) {
-            let matches = true;
-            for (let i = 0; i < overlap; i++) {
-                if (
-                    !sameMessage(
-                        collected[collected.length - overlap + i],
-                        current[i]
-                    )
-                ) {
-                    matches = false;
-                    break;
-                }
-            }
-            if (matches) break;
-            overlap--;
-        }
-
-        collected.push(...current.slice(overlap));
+        // Merge overlapping snapshots without dropping separate repeated turns.
+        collected.push(...getNonOverlappingMessages(collected, current));
     };
 
     container.scrollTop = 0;

@@ -1,12 +1,11 @@
 import { ChatGPTProvider } from "../providers/chatgpt";
 import { ClaudeProvider } from "../providers/claude";
 import { GeminiProvider } from "../providers/gemini";
+import { isPendingTransferInvalidOrExpired } from "../services/pendingTransfer";
 const GLOBAL_KEY = "__FLOWAI_CONTENT_INITIALIZED__";
 
 const STORAGE_KEY = "flowai-conversation";
 const PENDING_KEY = "flowai-pending-transfer";
-const PENDING_TRANSFER_TTL_MS = 10 * 60 * 1000;
-const CLOCK_SKEW_GRACE_MS = 60 * 1000;
 
 async function loadSavedConversation() {
     const result = await chrome.storage.local.get(STORAGE_KEY);
@@ -177,16 +176,7 @@ if (!(globalThis as Record<string, unknown>)[GLOBAL_KEY]) {
 
                 if (!pending) return;
 
-                const now = Date.now();
-                const createdAt = Date.parse(pending.createdAt);
-                const invalidTimestamp =
-                    !Number.isFinite(createdAt) ||
-                    createdAt > now + CLOCK_SKEW_GRACE_MS;
-                const expired =
-                    !invalidTimestamp &&
-                    now - createdAt > PENDING_TRANSFER_TTL_MS;
-
-                if (invalidTimestamp || expired) {
+                if (isPendingTransferInvalidOrExpired(pending.createdAt)) {
                     await clearPending();
                     console.warn(
                         "FlowAI: discarded an invalid or expired pending transfer"

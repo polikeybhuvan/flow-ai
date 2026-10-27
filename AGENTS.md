@@ -17,12 +17,12 @@
 8. Do not claim a provider works based only on compilation. Verify export/import manually on the provider's current UI.
 
 ## Local verification
-From source, install dependencies, then run npm run lint and npm run build. There is not yet an automated unit or end-to-end test suite; document manual provider checks with each provider-related change.
+From source, run npm ci, npm run lint, npm test, and npm run build. Unit tests cover pure transfer logic, not live provider DOM behavior; document manual provider checks with each provider-related change.
 
 ## Release checklist
 - Build and lint pass locally and in GitHub Actions.
-- The generated root dist output is rebuilt from the same commit.
+- The generated root dist output is rebuilt from the same commit and passes the CI consistency check.
 - ChatGPT, Claude, and Gemini export/import flows are checked manually.
 - Long-text insertion, expiry behavior, failure handling, and clear-data behavior are checked.
 - The release notes describe known provider-specific limitations.
-- A project license is selected before inviting external reuse or redistribution.
+- If the project is later distributed for reuse, choose a license before inviting external reuse or redistribution.

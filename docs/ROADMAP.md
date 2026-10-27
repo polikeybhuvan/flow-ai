@@ -10,11 +10,12 @@
 - [x] Clear the saved conversation and pending-transfer data from the popup.
 - [x] Expire pending transfers after ten minutes and clear them after an attempt.
 - [x] GitHub Actions lint and build checks.
-- [ ] Automated unit and end-to-end tests.
-- [ ] A selected project license.
+- [x] Unit tests for transcript formatting, overlap merging, and transfer expiry.
+- [ ] Browser-level end-to-end tests on live provider pages.
+- [ ] Add a license only if the project later needs to permit reuse or redistribution.
 
 ## Next priorities
-1. Add tests for transcript formatting, storage lifecycle, and pending-transfer expiry.
+1. Add tests for storage lifecycle and provider-independent transfer logic.
 2. Add browser-level smoke tests for each provider using controlled fixtures or a documented test account.
 3. Improve extraction reliability as ChatGPT, Claude, and Gemini change their DOM.
 4. Preview the transcript and let users choose which messages to transfer.

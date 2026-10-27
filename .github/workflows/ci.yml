@@ -5,6 +5,7 @@ on:
     branches: [main, develop]
     paths:
       - "source/**"
+      - "dist/**"
       - "docs/**"
       - "README.md"
       - "AGENTS.md"
@@ -13,6 +14,7 @@ on:
     branches: [main, develop]
     paths:
       - "source/**"
+      - "dist/**"
       - "docs/**"
       - "README.md"
       - "AGENTS.md"
@@ -22,8 +24,8 @@ permissions:
   contents: read
 
 jobs:
-  lint-and-build:
-    name: Lint and build extension
+  lint-test-build:
+    name: Lint, test, and build extension
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -35,9 +37,22 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
+      - name: Generate initial lockfile
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Lint
         run: npm run lint
+      - name: Unit tests
+        run: npm test
       - name: Build
         run: npm run build
+      - name: Upload bootstrap build and lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: flowai-bootstrap-files
+          path: |
+            source/package-lock.json
+            dist/**
+          if-no-files-found: error
+          retention-days: 7
