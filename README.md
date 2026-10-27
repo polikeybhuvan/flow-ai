@@ -256,6 +256,7 @@ flow-ai/
 │   │   └── ...
 │   ├── public/
 │   ├── package.json
+│   ├── package-lock.json       # Reproducible dependency installs
 │   └── vite.config.ts
 │
 ├── AGENTS.md
@@ -295,7 +296,7 @@ The GitHub Actions workflow runs linting, unit tests, a TypeScript check, a prod
 
 Before a release, verify ChatGPT detection, Claude detection, Gemini detection, conversation export/import, large conversation transfer, extension reload/install, and provider failure handling.
 
-If Playwright tests are configured, they should run in CI and their reports should be retained as workflow artifacts.
+Current unit tests cover transcript formatting, pending-transfer expiry, and overlapping ChatGPT scroll snapshots. They are not substitutes for manual end-to-end checks on live provider pages.
 
 ---
 

@@ -17,7 +17,7 @@
 8. Do not claim a provider works based only on compilation. Verify export/import manually on the provider's current UI.
 
 ## Local verification
-From source, run npm ci, npm run lint, npm test, and npm run build. Unit tests cover pure transfer logic, not live provider DOM behavior; document manual provider checks with each provider-related change.
+From source, run npm ci, npm run lint, npm test, and npm run build. CI must remain read-only and fail if the generated root dist/ output differs from the committed build. Unit tests cover pure transfer logic, not live provider DOM behavior; document manual provider checks with each provider-related change.
 
 ## Release checklist
 - Build and lint pass locally and in GitHub Actions.

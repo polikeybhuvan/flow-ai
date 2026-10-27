@@ -21,7 +21,7 @@ on:
       - ".github/workflows/**"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   lint-test-build:
@@ -37,34 +37,26 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Generate initial lockfile
-        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
       - name: Install locked dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Lint
         run: npm run lint
       - name: Unit tests
         run: npm test
-      - name: Build
+      - name: TypeScript check and production build
         run: npm run build
-      - name: Commit generated extension and lockfile
+      - name: Ensure generated assets are committed
         working-directory: ${{ github.workspace }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add source/package-lock.json dist/
-          if git diff --cached --quiet; then
-            echo "Generated artifacts are already up to date."
-          else
-            git commit -m "Sync lockfile and built extension"
-            git push origin "HEAD:${GITHUB_REF_NAME}"
+          if [ -n "$(git status --short --untracked-files=all)" ]; then
+            git status --short --untracked-files=all
+            echo "::error::Generated output or tracked files are out of sync. Run npm ci, npm test, and npm run build in source, then commit the resulting dist/ output."
+            exit 1
           fi
-      - name: Upload bootstrap build and lockfile
+      - name: Upload built extension
         uses: actions/upload-artifact@v4
         with:
-          name: flowai-bootstrap-files
-          path: |
-            source/package-lock.json
-            dist/**
+          name: flowai-extension-${{ github.sha }}
+          path: dist/**
           if-no-files-found: error
           retention-days: 7
