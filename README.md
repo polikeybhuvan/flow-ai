@@ -335,35 +335,22 @@ Never commit `.env` files, API keys, access tokens, passwords, cookies, session 
 
 ---
 
-# 🏆 Deploy or Die — HowToAlgo × GDG on Campus KIIT
+# 🏆 Top 7 — Wonder of Wonders 2026: Andhra Pradesh
 
-FlowAI was built for the **Deploy or Die: HowToAlgo × GDG on Campus KIIT Hackathon**.
+**FlowAI was selected as one of the Top 7 projects from a pool of 1,200+ developers representing 300+ colleges.**
 
-## Track B — Developer Productivity Tools
+The project was part of **Wonder of Wonders 2026: Andhra Pradesh**, an event listed by the Google Developer Groups community.
 
-FlowAI addresses a real developer workflow problem: moving working context between multiple AI assistants without repeatedly rebuilding the conversation.
+- **Recognition:** Top 7 project
+- **Event:** Wonder of Wonders 2026: Andhra Pradesh
+- **Participants:** 1,200+ developers from 300+ colleges
+- **Event page:** [Wonder of Wonders 2026: Andhra Pradesh](https://gdg.community.dev/events/details/google-gdg-vizag-presents-wonder-of-wonders-2026-andhra-pradesh/cohost-gdg-on-campus-sri-vasavi-engineering-college-tadepalligudem-india/)
 
-### Evaluation areas
-
-| Area | Weight |
-|---|---:|
-| Specification & Architecture | 25% |
-| Working Software & Delivery | 30% |
-| Agent Engineering & Code Quality | 30% |
-| Testing & Verification | 15% |
-| **Total** | **100%** |
-
-### Required repository checkpoints
-
-1. Architecture document
-2. Agent rules
-3. Working code
-4. Custom agent + custom skill
-5. Green CI/CD pipeline
+FlowAI addresses a practical developer-productivity problem: moving plain-text conversation context between ChatGPT, Claude, and Gemini without repeatedly rebuilding the prompt. The extension keeps the user in control and does not automatically send the imported prompt.
 
 ---
 
-# 📋 Hackathon Submission Checklist
+# 📋 Project Readiness Checklist
 
 - [ ] `README.md` is present
 - [ ] `docs/ARCHITECTURE.md` is complete
@@ -377,7 +364,7 @@ FlowAI addresses a real developer workflow problem: moving working context betwe
 - [ ] Linting and unit tests pass
 - [ ] Secrets are not committed
 - [ ] Git history contains progressive commits
-- [ ] A semantic version tag/release exists
+- [ ] Create a versioned release if packaging the project for wider distribution
 
 ---
 
@@ -424,7 +411,7 @@ New AI providers should be addable without rewriting the core transfer system.
 
 # 📄 License
 
-This hackathon project intentionally does not include a `LICENSE` file.
+This is a hackathon project and intentionally does not include a `LICENSE` file.
 
 ---
 
