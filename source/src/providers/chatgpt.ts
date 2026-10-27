@@ -5,6 +5,7 @@ import type {
 
 import { insertLargeText } from "./largeText";
 import { getNonOverlappingMessages } from "./messageMerge";
+import { roleFromContentSearchUnitKey, type ChatGPTSpeaker } from "./chatgptSelectors";
 
 function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => {
@@ -33,70 +34,210 @@ type ChatGPTCandidate = {
     text: string;
 };
 
+function roleFromAttributes(element: HTMLElement): ChatGPTSpeaker | null {
+    const candidates = [
+        element.getAttribute("data-message-author-role"),
+        element.getAttribute("data-role"),
+        element.getAttribute("data-message-author"),
+        element.getAttribute("data-turn"),
+    ];
+
+    for (const candidate of candidates) {
+        if (candidate === "user" || candidate === "assistant") {
+            return candidate;
+        }
+    }
+
+    return null;
+}
+
+function readElementText(element: HTMLElement): string {
+    return cleanText(element.innerText || element.textContent || "");
+}
+
+function preferredContentText(
+    root: HTMLElement,
+    role: ChatGPTSpeaker,
+    allowRootFallback = true
+): string {
+    const selectors =
+        role === "user"
+            ? [
+                  '[data-user-message-bubble="true"]',
+                  '[data-message-author-role="user"]',
+                  '[data-role="user"]',
+                  '[data-message-author="user"]',
+                  ".whitespace-pre-wrap",
+              ]
+            : [
+                  '[data-markdown-text-style="assistant-message"]',
+                  '[data-message-author-role="assistant"]',
+                  '[data-role="assistant"]',
+                  '[data-message-author="assistant"]',
+                  ".markdown",
+                  ".prose",
+              ];
+
+    for (const selector of selectors) {
+        const matches = [
+            ...(root.matches(selector) ? [root] : []),
+            ...Array.from(root.querySelectorAll<HTMLElement>(selector)),
+        ];
+        if (!matches.length) continue;
+
+        // Prefer outer content containers so nested markup is not duplicated.
+        const outermost = matches.filter(
+            (candidate) =>
+                !matches.some(
+                    (other) =>
+                        other !== candidate && other.contains(candidate)
+                )
+        );
+        const text = outermost
+            .map(readElementText)
+            .filter(Boolean)
+            .join("\n\n");
+
+        if (text) return text;
+    }
+
+    return allowRootFallback ? readElementText(root) : "";
+}
+
 function removeNestedDuplicateCandidates(
     candidates: ChatGPTCandidate[]
 ): ChatGPTCandidate[] {
-    return candidates.filter(
+    const filtered = candidates.filter(
         (candidate) =>
             !candidates.some(
                 (other) =>
                     other !== candidate &&
                     other.role === candidate.role &&
                     other.text === candidate.text &&
+                    other.element !== candidate.element &&
                     other.element.contains(candidate.element)
             )
     );
+
+    return filtered;
 }
 
-/*
- * ChatGPT can virtualize parts of long conversations.
- * Keep distinct turns even when their text repeats, while filtering
- * only duplicate text nodes nested inside the same message wrapper.
- */
-function collectChatGPTMessages(): ConversationMessage[] {
-    const roleElements = Array.from(
-        document.querySelectorAll<HTMLElement>("[data-message-author-role]")
+function collectFromRoleAttributes(): ChatGPTCandidate[] {
+    const elements = Array.from(
+        document.querySelectorAll<HTMLElement>(
+            "[data-message-author-role], [data-role], [data-message-author]"
+        )
     );
 
-    const roleCandidates: ChatGPTCandidate[] = [];
+    const candidates: ChatGPTCandidate[] = [];
 
-    for (const element of roleElements) {
-        const rawRole = element.getAttribute("data-message-author-role");
-        let role: ConversationMessage["role"];
+    for (const element of elements) {
+        const role = roleFromAttributes(element);
+        if (!role) continue;
 
-        if (rawRole === "user") role = "user";
-        else if (rawRole === "assistant") role = "assistant";
-        else if (rawRole === "system") role = "system";
-        else continue;
-
-        const text = cleanText(element.innerText || element.textContent || "");
-        if (text) roleCandidates.push({ element, role, text });
+        const text = preferredContentText(element, role);
+        if (text) candidates.push({ element, role, text });
     }
 
-    if (roleCandidates.length) {
-        return removeNestedDuplicateCandidates(roleCandidates).map(
-            ({ role, text }) => ({ role, text })
-        );
-    }
+    return removeNestedDuplicateCandidates(candidates);
+}
 
-    const turns = Array.from(
+function collectFromDataTurns(): ChatGPTCandidate[] {
+    const elements = Array.from(
         document.querySelectorAll<HTMLElement>("[data-turn]")
     );
-    const turnCandidates: ChatGPTCandidate[] = [];
+    const candidates: ChatGPTCandidate[] = [];
 
-    for (const element of turns) {
-        const rawRole = element.getAttribute("data-turn");
-        if (rawRole !== "user" && rawRole !== "assistant") continue;
+    for (const element of elements) {
+        const role = roleFromAttributes(element);
+        if (!role) continue;
 
-        const text = cleanText(element.innerText || element.textContent || "");
-        if (text) {
-            turnCandidates.push({ element, role: rawRole, text });
+        const text = preferredContentText(element, role);
+        if (text) candidates.push({ element, role, text });
+    }
+
+    return removeNestedDuplicateCandidates(candidates);
+}
+
+function collectFromContentSearchUnits(): ChatGPTCandidate[] {
+    const units = Array.from(
+        document.querySelectorAll<HTMLElement>("[data-content-search-unit-key]")
+    );
+    const candidates: ChatGPTCandidate[] = [];
+
+    for (const unit of units) {
+        const role =
+            roleFromContentSearchUnitKey(
+                unit.getAttribute("data-content-search-unit-key")
+            ) || roleFromAttributes(unit);
+
+        if (!role) continue;
+
+        const text = preferredContentText(unit, role);
+        if (text) candidates.push({ element: unit, role, text });
+    }
+
+    return removeNestedDuplicateCandidates(candidates);
+}
+
+function collectFromTurnKeys(): ChatGPTCandidate[] {
+    const turns = Array.from(
+        document.querySelectorAll<HTMLElement>("[data-turn-key]")
+    );
+    const candidates: ChatGPTCandidate[] = [];
+
+    for (const turn of turns) {
+        // Newer ChatGPT layouts expose the role on the message content
+        // rather than on the turn wrapper. A single wrapper can contain
+        // both role-specific nodes, so inspect each role independently.
+        for (const role of ["user", "assistant"] as const) {
+            const text = preferredContentText(turn, role, false);
+            if (text) candidates.push({ element: turn, role, text });
         }
     }
 
-    return removeNestedDuplicateCandidates(turnCandidates).map(
-        ({ role, text }) => ({ role, text })
-    );
+    return removeNestedDuplicateCandidates(candidates);
+}
+
+function collectFromRoleClasses(): ChatGPTCandidate[] {
+    const selectors = [
+        { selector: ".user-turn", role: "user" as const },
+        { selector: ".agent-turn", role: "assistant" as const },
+    ];
+    const candidates: ChatGPTCandidate[] = [];
+
+    for (const item of selectors) {
+        for (const element of document.querySelectorAll<HTMLElement>(item.selector)) {
+            const text = preferredContentText(element, item.role);
+            if (text) candidates.push({ element, role: item.role, text });
+        }
+    }
+
+    return removeNestedDuplicateCandidates(candidates);
+}
+
+/**
+ * Support both the classic ChatGPT DOM and newer account-specific layouts.
+ * The newer Chat / Work shell may omit data-message-author-role and data-turn,
+ * and instead expose data-content-search-unit-key / data-turn-key markers.
+ */
+function collectChatGPTMessages(): ConversationMessage[] {
+    const strategies = [
+        collectFromRoleAttributes,
+        collectFromDataTurns,
+        collectFromContentSearchUnits,
+        collectFromTurnKeys,
+        collectFromRoleClasses,
+    ];
+
+    for (const collect of strategies) {
+        const candidates = collect().filter((candidate) => candidate.text);
+        if (candidates.length) {
+            return candidates.map(({ role, text }) => ({ role, text }));
+        }
+    }
+
+    return [];
 }
 
 function findScrollableElement(): HTMLElement | null {
