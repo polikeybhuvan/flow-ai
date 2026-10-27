@@ -164,10 +164,11 @@ export default function App() {
             await saveConversation(data);
             setConversation(data);
 
-            if (isProviderId(response.platform)) {
+            const exportedPlatform: unknown = response.platform;
+            if (isProviderId(exportedPlatform)) {
                 setProvider({
-                    id: response.platform,
-                    name: providerLabels[response.platform],
+                    id: exportedPlatform,
+                    name: providerLabels[exportedPlatform],
                 });
             }
 

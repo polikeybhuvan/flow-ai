@@ -54,14 +54,16 @@ if (!(globalThis as Record<string, unknown>)[GLOBAL_KEY]) {
         return null;
     }
 
-    const currentProvider = getProvider();
+    const detectedProvider = getProvider();
 
-    if (!currentProvider) {
+    if (!detectedProvider) {
         console.log(
             "FlowAI: unsupported page:",
             location.hostname
         );
     } else {
+        const currentProvider = detectedProvider;
+
         console.log(
             "FlowAI: provider detected:",
             currentProvider.name
