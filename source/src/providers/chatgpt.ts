@@ -109,7 +109,17 @@ function findScrollableElement(): HTMLElement | null {
         }
     }
 
-    return best;
+    if (best) return best;
+
+    const rootScroller = document.scrollingElement as HTMLElement | null;
+    if (rootScroller && rootScroller.scrollHeight > rootScroller.clientHeight + 300) {
+        return rootScroller;
+    }
+
+    const documentElement = document.documentElement;
+    return documentElement.scrollHeight > documentElement.clientHeight + 300
+        ? documentElement
+        : null;
 }
 
 async function collectChatGPTMessagesFully(): Promise<ConversationMessage[]> {

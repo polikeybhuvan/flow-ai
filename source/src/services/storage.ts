@@ -50,3 +50,7 @@ export async function getPendingTransfer(): Promise<PendingTransfer | null> {
 export async function clearPendingTransfer(): Promise<void> {
   await chrome.storage.local.remove(PENDING_KEY);
 }
+
+export async function clearStoredData(): Promise<void> {
+  await chrome.storage.local.remove([STORAGE_KEY, PENDING_KEY]);
+}

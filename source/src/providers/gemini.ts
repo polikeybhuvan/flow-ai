@@ -104,50 +104,37 @@ function getEditorText(
 }
 
 function collectGeminiMessages(): ConversationMessage[] {
-    const nodes =
-        Array.from(
-            document.querySelectorAll(
-                "user-query, message-content, .model-response-text"
-            )
+    const candidates = Array.from(
+        document.querySelectorAll<Element>(
+            "user-query, message-content, .model-response-text"
+        )
+    );
+
+    // These selectors can match both a message wrapper and its nested text node.
+    // Filter only nested copies of the same DOM content; keep separate turns even
+    // when a user repeats the exact same text later in the conversation.
+    const nodes = candidates.filter((node) => {
+        const text = textOf(node);
+        if (!text) return false;
+
+        return !candidates.some(
+            (other) =>
+                other !== node &&
+                other.contains(node) &&
+                textOf(other) === text
         );
+    });
 
-    const messages: ConversationMessage[] =
-        [];
-
-    const seen = new Set<string>();
+    const messages: ConversationMessage[] = [];
 
     for (const node of nodes) {
-        const text =
-            textOf(node);
-
-        if (!text) {
-            continue;
-        }
-
-        const tag =
-            node.tagName.toLowerCase();
+        const text = textOf(node);
+        const tag = node.tagName.toLowerCase();
 
         const role: ConversationMessage["role"] =
-            tag === "user-query"
-                ? "user"
-                : "assistant";
+            tag === "user-query" ? "user" : "assistant";
 
-        /*
-         * Avoid duplicate assistant nodes.
-         */
-        const key =
-            `${role}:${text}`;
-
-        if (seen.has(key)) {
-            continue;
-        }
-
-        seen.add(key);
-
-        messages.push({
-            role,
-            text,
-        });
+        messages.push({ role, text });
     }
 
     return messages;

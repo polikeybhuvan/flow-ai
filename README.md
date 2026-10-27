@@ -46,6 +46,8 @@ FlowAI acts as a context bridge between AI assistants.
 
 The user remains in control while FlowAI handles the context transfer.
 
+**Important limitation:** FlowAI transfers a plain-text, role-labeled transcript into the destination model's composer. It does not recreate the provider's native conversation thread or preserve attachments, images, tool calls, or other hidden state. Review the inserted transcript before sending it.
+
 ---
 
 # ✨ Features
@@ -150,23 +152,26 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the detailed design.
 
 # 🚀 Quick Start
 
-## Load the ready-to-use build
+## Build and load the extension
 
-The repository contains a production extension build in `dist/`.
+Requirements: Node.js 22.12 or newer and npm.
 
 1. Clone the repository:
 
 ```bash
 git clone https://github.com/polikeybhuvan/flow-ai.git
-cd flow-ai
+cd flow-ai/source
+npm install
+npm run lint
+npm run build
 ```
 
 2. Open `chrome://extensions`.
-3. Enable **Developer mode**.
-4. Click **Load unpacked**.
-5. Select the repository's `dist/` folder.
-6. Open ChatGPT, Claude, or Gemini.
-7. Click the **FlowAI** extension icon.
+3. Enable **Developer mode** and click **Load unpacked**.
+4. Select the repository-root `dist/` folder.
+5. Open ChatGPT, Claude, or Gemini and click the **FlowAI** extension icon.
+
+The source build writes the extension to the root `dist/` directory. Run the build again after source changes so the loaded extension matches the source.
 
 ---
 
@@ -252,7 +257,7 @@ flow-ai/
 │   └── vite.config.ts
 │
 ├── AGENTS.md
-├── LICENSE
+├── .github/workflows/ci.yml   # Lint and build checks
 └── README.md
 ```
 
@@ -284,12 +289,7 @@ Full documentation: [`docs/AGENTS_AND_SKILLS.md`](docs/AGENTS_AND_SKILLS.md)
 
 # 🧪 Testing & Verification
 
-Recommended checks:
-
-```bash
-npm run lint
-npm run build
-```
+The GitHub Actions workflow runs `npm run lint` and `npm run build` on pushes and pull requests. The project does not yet have an automated unit or end-to-end test suite, so provider behavior still needs manual verification.
 
 Before a release, verify ChatGPT detection, Claude detection, Gemini detection, conversation export/import, large conversation transfer, extension reload/install, and provider failure handling.
 
@@ -420,7 +420,7 @@ New AI providers should be addable without rewriting the core transfer system.
 
 # 📄 License
 
-See [`LICENSE`](LICENSE).
+A license file has not been selected or added yet. Choose and add a license before inviting others to reuse or redistribute the project; public repository visibility alone does not grant those permissions.
 
 ---
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { downloadConversation } from "./services/exportService";
-import { saveConversation } from "./services/storage";
+import { clearStoredData, loadConversation, saveConversation } from "./services/storage";
 import { transferConversation } from "./services/transferService";
 import type { ProviderId } from "./services/navigation";
 import type { ConversationExport } from "./types/conversation";
@@ -91,6 +91,14 @@ export default function App() {
     const [busy, setBusy] = useState(false);
 
     useEffect(() => {
+        void loadConversation()
+            .then((stored) => {
+                if (stored?.data) setConversation(stored.data);
+            })
+            .catch((error: unknown) => {
+                console.error("FlowAI: failed to load saved conversation", error);
+            });
+
         void pingActiveTab()
             .then((response) => {
                 const id = response.platform as ProviderId;
@@ -224,6 +232,21 @@ export default function App() {
         setStatus("Conversation downloaded");
     }
 
+    async function handleClearSavedData() {
+        setBusy(true);
+        try {
+            await clearStoredData();
+            setConversation(null);
+            setStatus("Saved conversation and pending transfer cleared");
+        } catch (error: unknown) {
+            setStatus(
+                error instanceof Error ? error.message : String(error)
+            );
+        } finally {
+            setBusy(false);
+        }
+    }
+
     const currentId = provider.id;
 
     return (
@@ -328,6 +351,18 @@ export default function App() {
                 }}
             >
                 💾 Download JSON
+            </button>
+
+            <button
+                disabled={busy}
+                onClick={() => void handleClearSavedData()}
+                style={{
+                    width: "100%",
+                    padding: 12,
+                    marginTop: 9,
+                }}
+            >
+                🧹 Clear Saved Data
             </button>
 
             {conversation && (
