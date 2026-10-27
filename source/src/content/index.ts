@@ -1,6 +1,7 @@
 import { ChatGPTProvider } from "../providers/chatgpt";
 import { ClaudeProvider } from "../providers/claude";
 import { GeminiProvider } from "../providers/gemini";
+import { isPendingTransferInvalidOrExpired } from "../services/pendingTransfer";
 const GLOBAL_KEY = "__FLOWAI_CONTENT_INITIALIZED__";
 
 const STORAGE_KEY = "flowai-conversation";
@@ -52,14 +53,16 @@ if (!(globalThis as Record<string, unknown>)[GLOBAL_KEY]) {
         return null;
     }
 
-    const currentProvider = getProvider();
+    const detectedProvider = getProvider();
 
-    if (!currentProvider) {
+    if (!detectedProvider) {
         console.log(
             "FlowAI: unsupported page:",
             location.hostname
         );
     } else {
+        const currentProvider = detectedProvider;
+
         console.log(
             "FlowAI: provider detected:",
             currentProvider.name
@@ -172,6 +175,15 @@ if (!(globalThis as Record<string, unknown>)[GLOBAL_KEY]) {
                 const pending = await getPending();
 
                 if (!pending) return;
+
+                if (isPendingTransferInvalidOrExpired(pending.createdAt)) {
+                    await clearPending();
+                    console.warn(
+                        "FlowAI: discarded an invalid or expired pending transfer"
+                    );
+                    return;
+                }
+
                 if (pending.destination !== currentProvider.id) return;
 
                 console.log(
@@ -179,19 +191,23 @@ if (!(globalThis as Record<string, unknown>)[GLOBAL_KEY]) {
                     currentProvider.name
                 );
 
-                // Give the destination application time to initialize its editor.
-                await new Promise((resolve) => setTimeout(resolve, 1200));
+                try {
+                    // Give the destination application time to initialize its editor.
+                    await new Promise((resolve) => setTimeout(resolve, 1200));
 
-                const result = await importSavedConversation();
+                    const result = await importSavedConversation();
 
-                if (result.success) {
+                    if (result.success) {
+                        console.log("✅ FlowAI: automatic transfer complete");
+                    } else {
+                        console.error(
+                            "FlowAI: automatic transfer failed",
+                            result.error
+                        );
+                    }
+                } finally {
+                    // Do not auto-insert the same transcript again after a refresh.
                     await clearPending();
-                    console.log("✅ FlowAI: automatic transfer complete");
-                } else {
-                    console.error(
-                        "FlowAI: automatic transfer failed",
-                        result.error
-                    );
                 }
             } catch (error) {
                 console.error(

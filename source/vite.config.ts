@@ -8,7 +8,7 @@ const root = fileURLToPath(new URL(".", import.meta.url));
 export default defineConfig({
   plugins: [react()],
   build: {
-    outDir: "dist",
+    outDir: resolve(root, "../dist"),
     emptyOutDir: true,
     rollupOptions: {
       input: {

@@ -1,24 +1,33 @@
 {
   "name": "flow-ai",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "check": "npm run lint && npm test && npm run build",
+    "preview": "vite preview",
+    "test": "node --experimental-strip-types --test src/services/formatter.test.ts src/services/pendingTransfer.test.ts src/providers/messageMerge.test.ts"
   },
   "dependencies": {
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/chrome": "^0.2.5",
+    "@types/node": "^22.20.5",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.5",
+    "eslint": "^10.13.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^17.13.0",
     "typescript": "~6.0.2",
+    "typescript-eslint": "^8.72.0",
     "vite": "^8.2.0"
   }
 }
