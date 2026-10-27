@@ -26,20 +26,41 @@ function cleanText(text: string): string {
  * ChatGPT can virtualize parts of long conversations.
  * We therefore support multiple selectors.
  */
-function collectChatGPTMessages(): ConversationMessage[] {
-    const messages: ConversationMessage[] = [];
+type ChatGPTCandidate = {
+    element: HTMLElement;
+    role: ConversationMessage["role"];
+    text: string;
+};
 
+function removeNestedDuplicateCandidates(
+    candidates: ChatGPTCandidate[]
+): ChatGPTCandidate[] {
+    return candidates.filter(
+        (candidate) =>
+            !candidates.some(
+                (other) =>
+                    other !== candidate &&
+                    other.role === candidate.role &&
+                    other.text === candidate.text &&
+                    other.element.contains(candidate.element)
+            )
+    );
+}
+
+/*
+ * ChatGPT can virtualize parts of long conversations.
+ * Keep distinct turns even when their text repeats, while filtering
+ * only duplicate text nodes nested inside the same message wrapper.
+ */
+function collectChatGPTMessages(): ConversationMessage[] {
     const roleElements = Array.from(
-        document.querySelectorAll<HTMLElement>(
-            "[data-message-author-role]"
-        )
+        document.querySelectorAll<HTMLElement>("[data-message-author-role]")
     );
 
-    for (const element of roleElements) {
-        const rawRole = element.getAttribute(
-            "data-message-author-role"
-        );
+    const roleCandidates: ChatGPTCandidate[] = [];
 
+    for (const element of roleElements) {
+        const rawRole = element.getAttribute("data-message-author-role");
         let role: ConversationMessage["role"];
 
         if (rawRole === "user") role = "user";
@@ -47,46 +68,34 @@ function collectChatGPTMessages(): ConversationMessage[] {
         else if (rawRole === "system") role = "system";
         else continue;
 
-        const text = cleanText(
-            element.innerText || element.textContent || ""
-        );
-
-        if (text) messages.push({ role, text });
+        const text = cleanText(element.innerText || element.textContent || "");
+        if (text) roleCandidates.push({ element, role, text });
     }
 
-    if (!messages.length) {
-        const turns = Array.from(
-            document.querySelectorAll<HTMLElement>("[data-turn]")
+    if (roleCandidates.length) {
+        return removeNestedDuplicateCandidates(roleCandidates).map(
+            ({ role, text }) => ({ role, text })
         );
+    }
 
-        for (const turn of turns) {
-            const rawRole = turn.getAttribute("data-turn");
-            if (rawRole !== "user" && rawRole !== "assistant") continue;
+    const turns = Array.from(
+        document.querySelectorAll<HTMLElement>("[data-turn]")
+    );
+    const turnCandidates: ChatGPTCandidate[] = [];
 
-            const text = cleanText(
-                turn.innerText || turn.textContent || ""
-            );
+    for (const element of turns) {
+        const rawRole = element.getAttribute("data-turn");
+        if (rawRole !== "user" && rawRole !== "assistant") continue;
 
-            if (text) {
-                messages.push({
-                    role: rawRole,
-                    text,
-                });
-            }
+        const text = cleanText(element.innerText || element.textContent || "");
+        if (text) {
+            turnCandidates.push({ element, role: rawRole, text });
         }
     }
 
-    const unique: ConversationMessage[] = [];
-    const seen = new Set<string>();
-
-    for (const message of messages) {
-        const key = `${message.role}::${message.text}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        unique.push(message);
-    }
-
-    return unique;
+    return removeNestedDuplicateCandidates(turnCandidates).map(
+        ({ role, text }) => ({ role, text })
+    );
 }
 
 function findScrollableElement(): HTMLElement | null {
@@ -130,13 +139,39 @@ async function collectChatGPTMessagesFully(): Promise<ConversationMessage[]> {
     if (!container) return first;
 
     const originalTop = container.scrollTop;
-    const collected = new Map<string, ConversationMessage>();
+    const collected: ConversationMessage[] = [];
+
+    const sameMessage = (
+        left: ConversationMessage,
+        right: ConversationMessage
+    ) => left.role === right.role && left.text === right.text;
 
     const addCurrent = () => {
-        for (const message of collectChatGPTMessages()) {
-            const key = `${message.role}::${message.text}`;
-            if (!collected.has(key)) collected.set(key, message);
+        const current = collectChatGPTMessages();
+        if (!current.length) return;
+
+        // Adjacent scroll snapshots overlap. Merge only the longest suffix/prefix
+        // overlap, instead of globally deduplicating by text and dropping
+        // legitimate repeated turns.
+        let overlap = Math.min(collected.length, current.length);
+        while (overlap > 0) {
+            let matches = true;
+            for (let i = 0; i < overlap; i++) {
+                if (
+                    !sameMessage(
+                        collected[collected.length - overlap + i],
+                        current[i]
+                    )
+                ) {
+                    matches = false;
+                    break;
+                }
+            }
+            if (matches) break;
+            overlap--;
         }
+
+        collected.push(...current.slice(overlap));
     };
 
     container.scrollTop = 0;
@@ -168,29 +203,8 @@ async function collectChatGPTMessagesFully(): Promise<ConversationMessage[]> {
 
     container.scrollTop = originalTop;
 
-    // The scroll pass is only a fallback for virtualized long chats. Keep the
-    // normal DOM order whenever possible.
-    const finalVisible = collectChatGPTMessages();
-    const ordered: ConversationMessage[] = [];
-    const used = new Set<string>();
-
-    for (const message of finalVisible) {
-        const key = `${message.role}::${message.text}`;
-        if (!used.has(key)) {
-            used.add(key);
-            ordered.push(message);
-        }
-    }
-
-    for (const message of collected.values()) {
-        const key = `${message.role}::${message.text}`;
-        if (!used.has(key)) {
-            used.add(key);
-            ordered.push(message);
-        }
-    }
-
-    return ordered.length ? ordered : first;
+    // Captures were collected from the top to the bottom of the chat.
+    return collected.length ? collected : first;
 }
 
 /*
