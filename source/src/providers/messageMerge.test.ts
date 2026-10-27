@@ -16,13 +16,13 @@ test("removes a multi-message overlap between adjacent snapshots", () => {
     );
 });
 
-test("does not globally deduplicate a repeated message", () => {
-    const collected = [user("same"), assistant("reply"), user("same")];
-    const current = [user("same"), assistant("reply"), user("same"), assistant("next")];
+test("preserves a repeated message when it is a new turn", () => {
+    const collected = [user("same"), assistant("reply")];
+    const current = [assistant("reply"), user("same"), assistant("next")];
 
     assert.deepEqual(
         getNonOverlappingMessages(collected, current),
-        [assistant("reply"), user("same"), assistant("next")]
+        [user("same"), assistant("next")]
     );
 });
 
