@@ -1,8 +1,8 @@
 # 🚀 FlowAI
 
-### Switch AI models without losing context.
+### Move conversation context between AI assistants without starting from scratch.
 
-> **FlowAI** is a browser extension that lets developers seamlessly continue conversations across **ChatGPT, Claude, and Gemini** without manually copying, rebuilding, or losing project context.
+> **FlowAI** is a browser extension that helps developers move a role-labeled text transcript between **ChatGPT, Claude, and Gemini**, so they can continue working in another assistant without manually rebuilding the conversation.
 
 [![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-4285F4?logo=googlechrome&logoColor=white)](https://www.google.com/chrome/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -292,11 +292,11 @@ Full documentation: [`docs/AGENTS_AND_SKILLS.md`](docs/AGENTS_AND_SKILLS.md)
 
 # 🧪 Testing & Verification
 
-The GitHub Actions workflow runs linting, unit tests, a TypeScript check, a production build, and a check that the committed `dist/` output matches the source build. Provider behavior still needs manual verification because no live-site end-to-end tests are configured.
+The GitHub Actions workflow runs linting, unit tests, a TypeScript check, a production build, and a check that the committed `dist/` output matches the source build. The current ChatGPT export selector fallback has also been manually confirmed working in Chrome during development. Automated checks do not simulate the live AI websites, whose DOM structures can change independently.
 
-Before a release, verify ChatGPT detection, Claude detection, Gemini detection, conversation export/import, large conversation transfer, extension reload/install, and provider failure handling.
+Before a release, verify ChatGPT detection and export, full transfers into Claude and Gemini, long-conversation handling, extension reload/install, and provider failure handling.
 
-Current unit tests cover transcript formatting, pending-transfer expiry, and overlapping ChatGPT scroll snapshots. They are not substitutes for manual end-to-end checks on live provider pages.
+Current unit tests cover transcript formatting, pending-transfer expiry, ChatGPT speaker-key parsing, and overlapping scroll snapshots. They are not substitutes for manual end-to-end checks on live provider pages.
 
 ---
 
@@ -352,18 +352,17 @@ FlowAI addresses a practical developer-productivity problem: moving plain-text c
 
 # 📋 Project Readiness Checklist
 
-- [ ] `README.md` is present
+- [x] `README.md` is present
 - [ ] `docs/ARCHITECTURE.md` is complete
-- [ ] `AGENTS.md` is present
-- [ ] `docs/AGENTS_AND_SKILLS.md` documents a custom agent and skill
-- [ ] Application builds successfully
-- [ ] `dist/` matches the source build
-- [ ] GitHub Actions workflow exists
-- [ ] Latest CI run is green
-- [ ] Manual export/import checks pass on all three providers
-- [ ] Linting and unit tests pass
-- [ ] Secrets are not committed
-- [ ] Git history contains progressive commits
+- [x] `AGENTS.md` is present
+- [x] `docs/AGENTS_AND_SKILLS.md` documents a custom agent and skill
+- [x] Application builds successfully in CI
+- [x] `dist/` matches the source build in CI
+- [x] GitHub Actions workflow exists
+- [x] Linting and unit tests pass in CI
+- [ ] Full manual export/import checks pass across all three providers
+- [ ] Review current files and Git history for any remaining secrets
+- [x] Git history contains progressive commits
 - [ ] Create a versioned release if packaging the project for wider distribution
 
 ---
@@ -429,7 +428,7 @@ Project: https://github.com/polikeybhuvan/flow-ai
 
 ## 🚀 FlowAI
 
-### One conversation. Any model. Zero context loss.
+### One conversation. Multiple models. Less context rebuilding.
 
 **Built for developers who use more than one AI.**
 
