@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "check": "npm run lint && npm test && npm run build",
     "preview": "vite preview",
-    "test": "node --experimental-strip-types --test src/services/formatter.test.ts src/services/pendingTransfer.test.ts src/providers/messageMerge.test.ts"
+    "test": "node --experimental-strip-types --test src/services/formatter.test.ts src/services/pendingTransfer.test.ts src/providers/messageMerge.test.ts src/providers/chatgpt.test.ts"
   },
   "dependencies": {
     "react": "^19.2.8",
